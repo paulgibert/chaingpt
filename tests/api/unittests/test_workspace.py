@@ -1,0 +1,189 @@
+# Standard lib
+import os
+import shutil
+
+# 3rd party
+import pytest
+
+# Local
+from chaingpt.api import workspace
+
+
+def test___random_parent_dir__prefix_provided():
+    """
+    Checks that the provided `prefix` is prepended to the result.
+    """
+    dir = workspace._random_parent_dir(prefix="/prefix")
+    assert dir.split("/")[1] == "prefix"
+
+
+def test___random_parent_dir__prefix_is_none():
+    """
+    Checks that the default `prefix` is prepended to the result.
+    """
+    dir = workspace._random_parent_dir()
+    assert dir.split("/")[1] == "tmp"
+
+
+def test___validate_path_name__is_proper():
+    """
+    Checks that a properly formed path name does not raise an exception.
+    """
+    # TODO
+    pass
+
+
+def test___validate_path_name__is_improper():
+    """
+    Checks that improperly formatted or malicious path names raise an exception.
+    """
+    # TODO
+    pass
+
+
+def test___validate_git_url__is_proper():
+    """
+    Checks that a properly formed GitHub URL does not raise an exception.
+    """
+    # TODO
+    pass
+
+
+def test___validate_git_url__is_improper():
+    """
+    Checks that improperly formatted GitHub URLs raise an exception.
+    """
+    # TODO
+    pass
+
+
+def test___repo_name__no_suffix():
+    """
+    Checks that the correct name is extracted without the .git
+    suffix in the URL.
+    """
+    repo = workspace._repo_name("https://github.com/user/project")
+    assert repo == "project"
+
+
+def test___repo_name__with_suffix():
+    """
+    Checks that the correct name is extracted with the .git
+    suffix in the URL.
+    """
+    repo = workspace._repo_name("https://github.com/user/project.git")
+    assert repo == "project"
+
+
+@pytest.fixture
+def setup_grype_workspace(monkeypatch):
+    """
+    Fixture that sets up a workspace containing the grype
+    repository. Copies a large and small test file into the
+    top-level directory.
+    """
+    wk = workspace.Workspace("https://github.com/anchore/grype.git")
+    
+    big_path = os.path.join(wk.repo_dir, "big.txt")
+    with open(big_path, "w") as f:
+        f.write("A"*30000)
+    
+    small_path = os.path.join(wk.repo_dir, "small.txt")
+    with open(small_path, "w") as f:
+        f.write("B"*100)
+    
+    yield wk
+    shutil.rmtree(wk.parent_dir)
+
+
+@pytest.fixture
+def cleanup_leftover_workspaces():
+    """
+    Used in test cases that should fail to create a workspace. Cleans up workspace
+    """
+    yield
+    dirs = os.listdir("/tmp")
+    for d in dirs:
+        if d.startswith("chaingpt"):
+            path = os.path.join("/tmp", d)
+            shutil.rmtree(path)
+
+
+class TestWorkspace:
+    def test__clone__grype(self, setup_grype_workspace):
+        """
+        Checks that grype is successfully cloned by checking
+        if the README exists.
+        """
+        wk = setup_grype_workspace
+        readme_path = os.path.join(wk.repo_dir, "README.md")
+        assert os.path.exists(readme_path)
+
+
+    def test___clone__invalid_url(self, cleanup_leftover_workspaces):
+        """
+        Checks that a URL that does not lead to a GitHub
+        repository raises a `ValueError`.
+        """
+        with pytest.raises(ValueError):
+            workspace.Workspace("invalid.url/dne")
+
+
+    def test___read_n__file_size_gt_n(self, setup_grype_workspace):
+        """
+        Checks that the correct number of characters
+        is read when the file size is larger than `n`.
+        """
+        wk = setup_grype_workspace
+        chars = wk._read_n(10, "small.txt")
+        assert chars == "B" * 10
+
+
+    def test___read_n__file_size_lt_n(self, setup_grype_workspace):
+        """
+        Checks that the correct number of characters
+        is read when the file size is less than `n`.
+        """
+        wk = setup_grype_workspace
+        chars = wk._read_n(200, "small.txt")
+        assert chars == "B" * 100
+
+
+    def test___read_n__file_size_eq_n(self, setup_grype_workspace):
+        """
+        Checks that the correct number of characters
+        is read when the file size is equal to `n`.
+        """
+        wk = setup_grype_workspace
+        chars = wk._read_n(100, "small.txt")
+        assert chars == "B" * 100
+
+
+    def test___fileqa__question_is_not_str(self, setup_grype_workspace):
+        """
+        Checks that a `TypeError` is raised if `question` is not
+        a string.
+        """
+        wk = setup_grype_workspace
+        with pytest.raises(TypeError):
+            wk.fileqa(999, "README.md")
+
+
+    def test__fileqa__file_path_is_not_str(self, setup_grype_workspace):
+        """
+        Checks that a `TypeError` is raised if `file_path` is not
+        a string.
+        """
+        wk = setup_grype_workspace
+        with pytest.raises(TypeError):
+            wk.fileqa("What is the name of the project?", 999)
+
+
+    def test__fileqa__file_path_dne(self, setup_grype_workspace):
+        """
+        Checks that a `FileNotFoundError` is raised if
+        `file_path` does not exist in the repository.
+        """
+        wk = setup_grype_workspace
+        with pytest.raises(FileNotFoundError):
+            wk.fileqa("What is the name of the project?", "dne.txt")

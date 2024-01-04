@@ -10,5 +10,6 @@ name = "chaingpt"
 version = "0.0.1"
 dependencies = [
     "flask-restful >= 0.3.10",
-    "langchain >= 0.0.353"
+    "langchain >= 0.0.353",
+    "openai >= 1.6.1"
 ]

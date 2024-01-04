@@ -4,17 +4,17 @@ import uuid
 import os
 
 # 3rd party
-from sh import git
+from sh import git, ErrorReturnCode_128
 
 # Local
-from llm import text_qa, text_qa_refine, LLMResponse
+from chaingpt.api.llm import text_qa, text_qa_refine, LLMResponse
 
 
 def _random_parent_dir(prefix: str="/tmp") -> str:
     """
     Generate a random parent directory for a workspace.
     """
-    dir = "chaingpt" + str(uuid.uuid4())
+    dir = "chaingpt-" + str(uuid.uuid4())
     return os.path.join(prefix, dir)
 
 
@@ -41,7 +41,7 @@ def _repo_name(url: str) -> str:
     """
     repo = os.path.basename(url)
     if repo.endswith(".git"):
-        repo = repo[-4:]
+        repo = repo[:-4]
     return repo
 
 
@@ -59,14 +59,17 @@ class Workspace():
         """
         _validate_git_url(url)
         self.repo_dir = os.path.join(self.parent_dir, _repo_name(url))
-        git.clone(url, self.repo_dir)
+        try:
+            git.clone(url, self.repo_dir)
+        except ErrorReturnCode_128:
+            raise ValueError(f"Error cloning {url}. Is the URL valid?")
 
     def _read_n(self, n: int, file_path: str) -> str:
         """
         Reads `n` characters from `file_path`. The `file_path`
         is relative to the top-level directory of the repository.
         """
-        full_path = os.path.append(self.repo_dir, file_path)
+        full_path = os.path.join(self.repo_dir, file_path)
         with open(full_path, encoding="utf-8") as f:
             return f.read(n)
 
@@ -89,11 +92,16 @@ class Workspace():
             FileNotFoundError: If the file does not exist.
         """
         # TODO: Feature that returns if the file was truncated.
+        if not isinstance(question, str):
+            raise TypeError("`question` must be a string")
+        if not isinstance(file_path, str):
+            raise TypeError("`file_path` must be a string")
+        
         _validate_path_name(file_path)
         text = self._read_n(100000, file_path)
         if len(text) > 10000:
-            return text_qa(question, text, file_path=file_path, chunk_size=10000)
-        return text_qa_refine(question, text, file_path=file_path)
+            return text_qa_refine(question, text, file_path=file_path, chunk_size=10000)
+        return text_qa(question, text, file_path=file_path)
 
     def search(self, path: str) -> List[str]:
         # TODO
