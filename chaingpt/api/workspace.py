@@ -1,7 +1,8 @@
 # Standard lib
-from typing import List
+from typing import List, Tuple
 import uuid
 import os
+import glob
 
 # 3rd party
 from sh import git, ErrorReturnCode_128
@@ -89,9 +90,10 @@ class Workspace():
             An `LLMResponse` containing the output from the LLM's analysis.
         
         Raises:
+            TypeError: If `question` or `file_path` are not strings.
             FileNotFoundError: If the file does not exist.
         """
-        # TODO: Feature that returns if the file was truncated.
+        # TODO: Add a feature that returns if the file was truncated.
         if not isinstance(question, str):
             raise TypeError("`question` must be a string")
         if not isinstance(file_path, str):
@@ -103,6 +105,33 @@ class Workspace():
             return text_qa_refine(question, text, file_path=file_path, chunk_size=10000)
         return text_qa(question, text, file_path=file_path)
 
-    def search(self, path: str) -> List[str]:
-        # TODO
-        return ["file1", "file2", "file3"]
+
+    def search(self, path: str) -> Tuple[List[str], List[str]]:
+        """
+        Searches the repository for files and directories matching `path`, which
+        may include wildcard characters. All paths are interpreted as relative to
+        the top-level directory of the repository.
+
+        Args:
+            path (str): The path to search.
+
+        Returns:
+            A Tuple of two `List` objects. The first `List` contains the directory names.
+            The second `List` contains the file names.
+        
+        Raises:
+            TypeError: If `path` is not a string.
+        """
+        if not isinstance(path, str):
+            raise TypeError("`path` must be a string")
+        _validate_path_name(path)
+        abs_path = os.path.join(self.repo_dir, path)
+        results = glob.glob(abs_path, recursive=True)
+        files = []
+        dirs = []
+        for r in results:
+            if os.path.isdir(r):
+                dirs.append(os.path.relpath(r, self.repo_dir))
+            else:
+                files.append(os.path.relpath(r, self.repo_dir))
+        return dirs, files

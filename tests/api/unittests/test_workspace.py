@@ -154,3 +154,63 @@ class TestWorkspace:
         wk = setup_grype_workspace
         with pytest.raises(FileNotFoundError):
             wk.fileqa("What is the name of the project?", "dne.txt")
+    
+
+    def test__search__no_wildcards_dir(self, setup_grype_workspace):
+        """
+        Checks retrieval of a directory with no wildcards.
+        """
+        wk = setup_grype_workspace
+        dirs, files = wk.search("grype")
+        assert "grype" in dirs
+        assert files == []
+
+
+    def test__search__no_wildcards_file(self, setup_grype_workspace):
+        """
+        Checks retrieval of a file with no wildcards.
+        """
+        wk = setup_grype_workspace
+        dirs, files = wk.search("grype/lib.go")
+        assert dirs == []
+        assert "grype/lib.go" in files
+        
+
+    def test__seach__wildcards(self, setup_grype_workspace):
+        """
+        Checks retrieval of files and directories using wildcards.
+        """
+        wk = setup_grype_workspace
+        dirs, files = wk.search("grype/*")
+        assert "grype/db" in dirs
+        assert "grype/lib.go" in files
+        
+
+    def test__search__no_results(self, setup_grype_workspace):
+        """
+        Checks that empty list are returned for searches
+        with no results.
+        """
+        wk = setup_grype_workspace
+        dirs, files = wk.search("internal/non_existent")
+        assert dirs == []
+        assert files == []
+
+
+    def test__search__path_is_not_str(self, setup_grype_workspace):
+        """
+        Checks that a `TypeError` is raised if `path`
+        is not a `str`.
+        """
+        wk = setup_grype_workspace
+        with pytest.raises(TypeError):
+            wk.search(123)
+
+
+    def test__search__traversal_attack(self):
+        """
+        Checks that attempts to navigate outside of the
+        repository fail.
+        """
+        # TODO
+        pass
