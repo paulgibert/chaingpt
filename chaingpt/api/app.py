@@ -1,7 +1,7 @@
 # Standard lib
 
 # 3rd party
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request, abort, Response
 from flask_restful import Resource, Api, reqparse
 
 # local
@@ -63,30 +63,27 @@ class FileSearch(Resource):
 
         try:
             workspace = get_workspace(params["session_id"])
-            dirs, files = workspace.search(params["path"])
-            return jsonify({
-                "directories": dirs,
-                "files": files})
+            return workspace.search(params["path"])
         except ValueError as e:
             return {"error": str(e)}, 400
 
 
 class RunScript(Resource):
     def post(self):
-        params = {}
-        for param in ["script", "deps"]:
-            value = request.args.get(param)
-            if value is None:
-                return {"error", f"Missing required parameter `{param}`"}, 400
-            params[param] = value
-        deps = params["deps"].split(" ")
+        data = request.get_json()
+        # TODO: This will work for now but need more rigorous type checking
+        if "script" not in data.keys():
+            return {"error", f"Missing required parameter `script`"}, 400
+        if not isinstance(data["script"], str):
+            return {"error", f"Wrong type for parameter `script`"}, 400
+        
+        if "deps" not in data.keys():
+            return {"error", f"Missing required parameter `deps`"}, 400
+        if not isinstance(data["deps"], list):
+            return {"error", f"Wrong type for parameter `deps`"}, 400
+
         env = SystemEnvironment()
-        result = env.run(params["script"], deps=deps)
-        return jsonify({
-            "return_code": result.return_code,
-            "stdout": result.stdout,
-            "stderr": result.stderr
-        })
+        return Response(env.run(data["script"], data["deps"]), content_type="text/plain")
 
 
 api.add_resource(Session, "/tools/sessions/create")
