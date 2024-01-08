@@ -63,8 +63,10 @@ class FileSearch(Resource):
 
         try:
             workspace = get_workspace(params["session_id"])
-            files = workspace.search(params["path"])
-            return jsonify({"files": files})
+            dirs, files = workspace.search(params["path"])
+            return jsonify({
+                "directories": dirs,
+                "files": files})
         except ValueError as e:
             return {"error": str(e)}, 400
 
