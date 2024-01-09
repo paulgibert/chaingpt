@@ -1,0 +1,18 @@
+github_repository_cache:
+  repository_dir: /tmp/chaingpt
+
+wolfi_database:
+  os_dir: /tmp/chaingpt
+  index_dir: /tmp/chaingpt
+  rebuild_at_start: True
+
+docker_shell_environment:
+  image: chaingpt-shell-env
+
+llm:
+  agent_model: gpt-4
+  file_qa_model: gpt-3.5-turbo-1106
+
+secrets:
+  openai_api_key: YOUR_OPENAI_API_KEY_HERE
+  github_personal_access_token: YOUR_GITHUB_TOKEN_HERE

@@ -3,6 +3,7 @@ from operator import itemgetter
 from dataclasses import dataclass
 
 # 3rd party
+import openai
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -11,9 +12,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.callbacks import get_openai_callback
 
 # Local
+from chaingpt.utils import config
 
 
-LLM_MODEL = "gpt-3.5-turbo-1106"
+openai.api_key = config["secrets"]["openai_api_key"]
+LLM_MODEL = config["llm"]["file_qa_model"]
 
 
 document_prompt = """

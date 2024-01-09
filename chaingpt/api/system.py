@@ -1,15 +1,15 @@
 # Standard lib
 from typing import List, Iterator
-import os
 from dataclasses import dataclass
 
 # 3rd party
 import docker
 
 # Local
+from chaingpt.utils import config
 
 
-IMAGE_NAME = "chaingpt-script-env"
+IMAGE_NAME = config.config["docker_shell_environment"]["image"]
 
 
 @dataclass
@@ -37,6 +37,7 @@ class SystemEnvironment():
             TypeError: If argument types are invalid.
         """
         # TODO add better management of the underlying image. Does it exist?
+        # TODO add dependency validation
         client = docker.from_env()
         
         install_deps = f"apk add {' '.join(deps)}"
