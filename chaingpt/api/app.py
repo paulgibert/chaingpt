@@ -7,6 +7,7 @@ from flask_restful import Resource, Api, reqparse
 # local
 from chaingpt.api.session import new_session, get_workspace
 from chaingpt.api.system import SystemEnvironment
+from chaingpt.api.wolfi import WolfiClient
 
 
 app = Flask(__name__)
@@ -68,6 +69,17 @@ class FileSearch(Resource):
             return {"error": str(e)}, 400
 
 
+class WolifSearch(Resource):
+    def get(self):
+        keyword = request.args.get("keyword")
+        if keyword is None:
+            return {"error", f"Missing required parameter `keyword`"}, 400
+        client = WolfiClient()
+        results = client.search(keyword)
+        packages = [r.name for r in results]
+        return jsonify({"packages": packages})
+        
+        
 class RunScript(Resource):
     def post(self):
         data = request.get_json()
