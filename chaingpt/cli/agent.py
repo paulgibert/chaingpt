@@ -2,6 +2,7 @@
 from typing import Iterator
 
 # 3rd party
+import openai
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.agents.initialize import initialize_agent
@@ -16,6 +17,9 @@ from langchain.callbacks.base import BaseCallbackHandler
 from chaingpt.api.llm import LLMResponse
 from chaingpt.cli.tools import get_tools
 from chaingpt.utils import config
+
+
+openai.api_key = config.config["secrets"]["openai_api_key"]
 
 
 # TODO: Add configs for adjusting fields such as chunk size and chunk overlap
