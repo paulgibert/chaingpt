@@ -3,15 +3,16 @@ from typing import Iterator
 
 # 3rd party
 from langchain.chat_models import ChatOpenAI
+from langchain.prompts import PromptTemplate
 from langchain.agents.initialize import initialize_agent
+from langchain.agents.agent import AgentExecutor
 from langchain.agents.agent_types import AgentType
+from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import MessagesPlaceholder
+from langchain.callbacks.base import BaseCallbackHandler
 
 # Local
-from chaingpt.api.workspace import Workspace
-from chaingpt.api.wolfi import WolfiClient
-from chaingpt.api.system import SystemEnvironment
 from chaingpt.api.llm import LLMResponse
 from chaingpt.cli.tools import get_tools
 from chaingpt.utils import config
@@ -27,33 +28,40 @@ class ChainGPTAgent:
         self._init_agent()
 
     def _init_agent(self):
-        def callback(output: str):
+        def callback2(output: str):
             print(output, end="")
 
-        tools = get_tools(self.url, callback)
+        tools = get_tools(self.url, callback2)
         llm = ChatOpenAI(temperature=0, model=LLM_MODEL)
-        agent_kwargs = {
-            "extra_prompt_messages": [MessagesPlaceholder(variable_name="memory")],
-        }
 
-        memory = ConversationBufferMemory(memory_key="memory", return_messages=True)
-
-        context = f"""
-        As an AI expert and extremely intelligent engineering assistant focusing on the {self.url} GitHub repository,
+        prompt = PromptTemplate.from_template("""
+        As an AI expert and extremely intelligent engineering assistant focusing on the %s GitHub repository,
         your key role is to engage with engineers, offering precise and reliable
         information about repository-related issues. You are equipped with specialized
         tools for searching file names, reading files, and executing shell scripts. Your responses should be concise yet thorough,
         backed by diligent verification using these tools. You are expected to research exhaustively
         and consider multiple perspectives before finalizing an answer, demonstrating your commitment
-        to accuracy and detail in engineering problem-solving. 
-        """
+        to accuracy and detail in engineering problem-solving. When problem-solving, follow these special instructions:
+        
+        1) You have an extreme "Can Do!" attitude. Try to never report an error or quit without providing the answer, especially when testing shell code.
+           Instead try extremely hard to diagnose the issue and test other options until eventually you encounter a working solution. Ask, nothing of the user
+           before trying to do it yourself. Only then should you report your findings.
+        
+        2) You should do more to verify that shell commands worked than just reading stdout and stderr. You should include verification
+           commands that produce additional helpful output to ensure shell commands succeeded or to help diagnose issues.
+        
+        3) You may be asked to run commands that produce files in the repository. Take care that the files you produce do not clash with
+           the names of other files/directories in the repo. I.e, be sure to perform adequate reconnaissance in the repository.
 
-        self.agent = initialize_agent(
-            tools, llm, agent=AgentType.OPENAI_FUNCTIONS,
-            agent_kwargs=agent_kwargs,
-            memory=memory, context_prompt=context,
-            verbose=True
-        )
+        {chat_history}
+        Question: {input}
+        {agent_scratchpad}
+        """ % self.url)
 
-    def prompt(self, msg: str) -> Iterator[LLMResponse]:
-        output = self.agent.run(msg)
+        self.agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
+        memory = ConversationBufferMemory(memory_key="chat_history")
+        self.agent_executor = AgentExecutor.from_agent_and_tools(agent=self.agent, tools=tools, memory=memory)
+
+
+    def prompt(self, msg: str, callback: BaseCallbackHandler=None) -> Iterator[LLMResponse]:
+        output = self.agent_executor.invoke({"input": msg}, config={"callbacks": [callback]})

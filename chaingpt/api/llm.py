@@ -15,8 +15,8 @@ from langchain.callbacks import get_openai_callback
 from chaingpt.utils import config
 
 
-openai.api_key = config["secrets"]["openai_api_key"]
-LLM_MODEL = config["llm"]["file_qa_model"]
+openai.api_key = config.config["secrets"]["openai_api_key"]
+LLM_MODEL = config.config["llm"]["file_qa_model"]
 
 
 document_prompt = """

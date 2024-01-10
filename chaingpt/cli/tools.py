@@ -36,7 +36,8 @@ def get_tool_search_path(workspace: Workspace) -> StructuredTool:
         Efficiently search for files and directories using this tool,
         which allows you to specify a path and employ glob patterns
         for advanced queries. Searches begin at the top-level of the
-        cloned repository.
+        cloned repository. For example, to get all of the files in the top-level
+        directory, pass * to path.
         """
         dirs, files = workspace.search(path)
         return "Directories: [" + ", ".join(dirs) + "]\nFiles: [" + ", ".join(files) + "]"
@@ -53,11 +54,15 @@ def get_tool_run_script(callback: any) -> StructuredTool:
         together multiple commands.
 
         The results of stdout and stdin are returned. Any changes the script makes
-        to the environment are not persisted. The environment comes preinstalled with
-        basic software utilities, but often times you will have to specify dependencies via the 
-        deps argument. deps should be a comma separated list of Wolfi packages the script depends on.
+        to the environment are not persisted. You will have to specify dependencies via the 
+        deps argument, a comma separated list of Wolfi packages the script depends on.
         For example, a script requiring git and python 3.10 would pass "python-3.10, git" for deps. All deps
         are specific to Wolfi. Use the search_wolfi tool to lookup the names of these dependencies.
+
+        The environment does not have the repository preinstalled. If you wish to use the environment to test
+        interactions with the repository, be sure to clone the repo first in the commands passed to this tool.
+
+        Do not use docker within the environment.
         """
         deps_list = deps.split(",")
         deps_list = [d.strip(" \n") for d in deps_list]

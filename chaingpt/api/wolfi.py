@@ -5,7 +5,7 @@ import shutil
 from dataclasses import dataclass
 
 # 3rd party
-from whoosh.index import create_in
+from whoosh.index import create_in, open_dir
 from whoosh.fields import Schema, TEXT
 from whoosh.qparser import QueryParser
 from whoosh.query import Or
@@ -42,6 +42,8 @@ class WolfiClient:
                 or (not os.path.exists(self.os_path)) \
                 or (not os.path.exists(self.index_path)):
             self._init_index()
+        else:
+            self.index = open_dir(self.index_path)
     
     def _init_index(self):
         """
@@ -114,4 +116,14 @@ class WolfiClient:
 
             # Perform the search
             results = searcher.search(combined_query)
-            return [WolfiPackageResult(r["package_name"], r["package_desc"]) for r in results]
+            
+            output = []
+            for r in results:
+                name = r["package_name"]
+                # TODO: Why aren't these keys guaranteed to be present in the result?
+                if "package_desc" in r.keys():
+                    desc = r["package_desc"]
+                else:
+                    desc = ""
+                output.append(WolfiPackageResult(name, desc))
+            return output
