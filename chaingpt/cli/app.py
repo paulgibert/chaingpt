@@ -1,5 +1,6 @@
 # Standard lib
-from typing import Dict, List, Any
+import os
+from typing import Dict, Any
 import argparse
 
 # 3rd party
@@ -10,6 +11,7 @@ from langchain_core.agents import AgentAction
 # Local
 from chaingpt.cli.agent import ChainGPTAgent
 from chaingpt.cli.display import display_tool_call, display_response
+from chaingpt.utils.config import config
 
 
 class ChainGPTAgentCallback(BaseCallbackHandler):
@@ -59,7 +61,3 @@ def main():
 
     app = ChainGPTApp(args.url)
     app.chatloop()
-
-
-if __name__ == "__main__":
-    main()

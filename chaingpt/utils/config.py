@@ -2,11 +2,13 @@
 from typing import Dict
 
 # 3rd party
+import os
+from pathlib import Path
 import yaml
 
 
 # TODO: Add checks to config to ensure expected fields are present
-CONFIG_FILE_NAME = "config.yaml"
+CONFIG_FILE_NAME = os.path.join(Path.home(), ".chaingpt", "config.yaml")
 
 
 def _load_config() -> Dict:
