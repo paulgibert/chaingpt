@@ -8,7 +8,13 @@ import glob
 from sh import git, ErrorReturnCode_128
 
 # Local
-from chaingpt.api.llm import text_qa, text_qa_refine, LLMResponse
+from chaingpt.api.llm import text_qa, text_qa_map_reduce, LLMResponse
+from chaingpt.utils import config
+
+
+MAX_FILE_SZ = config.config["llm"]["max_file_sz"]
+MAP_REDUCE_CHUNK_SZ = config.config["llm"]["map_reduce"]["chunk_sz"]
+MAP_REDUCE_CHUNK_OVERLAP = config.config["llm"]["map_reduce"]["chunk_overlap"]
 
 
 def _random_parent_dir(prefix: str="/tmp") -> str:
@@ -77,9 +83,9 @@ class Workspace():
     def fileqa(self, question: str, file_path: str) -> LLMResponse:
         """
         Analyzes the contents of `file_path` to answer the `question` using an LLM.
-        Files larger than 10000 characters are split into chunks and analyzed
-        via a refine method. Files larger than 100000 are truncated to only the
-        first 100000 characters.
+        Files larger than `MAP_REDUCE_CHUNK_SIZE` characters are split into chunks and analyzed
+        via a refine method. Files larger than `MAX_FILE_SZ` are truncated to only the
+        first `MAX_FILE_SZ` characters.
 
         Args:
             question (str): The question to ask.
@@ -100,9 +106,11 @@ class Workspace():
             raise TypeError("`file_path` must be a string")
         
         _validate_path_name(file_path)
-        text = self._read_n(100000, file_path)
-        if len(text) > 10000:
-            return text_qa_refine(question, text, file_path=file_path, chunk_size=10000)
+        text = self._read_n(MAX_FILE_SZ, file_path)
+        if len(text) > MAP_REDUCE_CHUNK_SZ:
+            return text_qa_map_reduce(question, text, file_path=file_path,
+                                      chunk_size=MAP_REDUCE_CHUNK_SZ,
+                                      chunk_overlap=MAP_REDUCE_CHUNK_OVERLAP)
         return text_qa(question, text, file_path=file_path)
 
 

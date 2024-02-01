@@ -49,8 +49,11 @@ class ChainGPTApp:
         self.agent = ChainGPTAgent(self.url)
 
     def chatloop(self):
+        print("\nWelcome to ChainGPT! Provide a prompt or type `exit` to quit.")
         while True:
-            prompt = input("> ")
+            prompt = input("Enter a prompt > ")
+            if prompt == "exit":
+                return
             self.agent.prompt(prompt, ChainGPTAgentCallback())
 
 

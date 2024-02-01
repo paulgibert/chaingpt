@@ -8,7 +8,6 @@ from langchain.tools import StructuredTool
 from chaingpt.api.workspace import Workspace
 from chaingpt.api.wolfi import WolfiClient
 from chaingpt.api.system import SystemEnvironment
-from chaingpt.api.llm import LLMResponse
 
 
 def _error(msg: str) -> str:

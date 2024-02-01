@@ -3,6 +3,7 @@ from operator import itemgetter
 from dataclasses import dataclass
 
 # 3rd party
+from tqdm import tqdm
 import openai
 from langchain.prompts import PromptTemplate
 from langchain.chat_models import ChatOpenAI
@@ -80,10 +81,10 @@ class LLMResponse():
     output_tokens: int
 
 
-def text_qa_refine(question: str, text: str,
-                   file_path: str="unknown",
-                   chunk_size: int=10000,
-                   chunk_overlap: int=500) -> LLMResponse:
+def text_qa_map_reduce(question: str, text: str,
+                       file_path: str="unknown",
+                       chunk_size: int=10000,
+                       chunk_overlap: int=500) -> LLMResponse:
     """
     Uses an LLM to analyze a body of text according to a question. Text
     is split into chunks and analyzed using a refinement method.
@@ -114,7 +115,9 @@ def text_qa_refine(question: str, text: str,
     } for doc in docs]
     
     with get_openai_callback() as cb:
-        summaries = document_chain.batch(inputs)
+        summaries = []
+        for i in tqdm(inputs, desc="Processing large file in chunks"):
+            summaries.append(document_chain.invoke(i))
     
         output = summarize_chain.invoke({
             "file_path": file_path,
