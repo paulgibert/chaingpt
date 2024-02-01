@@ -37,7 +37,7 @@ class SystemEnvironment():
             TypeError: If argument types are invalid.
         """
         # TODO add better management of the underlying image. Does it exist?
-        # TODO add dependency validation
+        # TODO validate if the provided dependency is valid
         client = docker.from_env()
         
         install_deps = f"apk add {' '.join(deps)}"

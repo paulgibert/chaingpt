@@ -7,7 +7,7 @@ wolfi_database:
   rebuild_at_start: True
 
 docker_shell_environment:
-  image: chaingpt-shell-env
+  image: cgr.dev/chainguard/wolfi-base:latest
 
 llm:
   agent_model: gpt-4
