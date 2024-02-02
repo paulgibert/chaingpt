@@ -20,46 +20,56 @@ openai.api_key = config.config["secrets"]["openai_api_key"]
 LLM_MODEL = config.config["llm"]["file_qa_model"]
 
 
-document_prompt = """
+summarize_chunk_prompt = """
     You are scanning the contents of a large file from a GitHub repository
     located at the path {file_path}. You are analyzing the file chunk by chunk in order
-    to answer the question '{question}'. Summarize the provided chunk, including
-    any information relevant to the question. If the chunk contains no relevant information,
-    respond with an empty string.
+    to answer the question '{question}'. You have created the the following running summary
+    from the previous chunks:
 
-    Chunk:
+    <summary>
+    {summary}
+    </summary>
 
+
+    Update this summary using information from the chunk provided below. Only include information
+    relevant to the query. Respond with only the resulting summary. If the chunk contains no
+    relevant information, respond with only the unmodified summary.
+
+    <chunk>
     {chunk}
+    </chunk>
     """
 
-summarize_prompt = """
+read_summary_prompt = """
     You are scanning the contents of a large file from a GitHub repository located at
     the path {file_path}. You scanned the file chunk by chunk, summarizing each chunk
-    for information to answer the question '{question}'. The summarized chunks are provided below.
-    Using these summaries, answer the provided question. If the summaries do not contain information
-    relevant to the question, reply that there is not enough information in the file to provide an answer.
+    for information to answer the question '{question}'. A summary of the information from these
+    chunks is given below. Using this summary, answer the provided question. If the summaries do
+    not contain information relevant to the question, reply that there is not enough information
+    in the file to provide an answer.
 
-    summaries:
-
-    {summaries}
+    <summary>
+    {summary}
+    </summary>
     """
 
 llm = ChatOpenAI(model=LLM_MODEL, temperature=0)
 
-document_chain = ({
+summarize_chunk_chain = ({
     "file_path": itemgetter("file_path"),
     "question": itemgetter("question"),
-    "chunk": itemgetter("chunk")}
-    | PromptTemplate.from_template(document_prompt)
+    "chunk": itemgetter("chunk"),
+    "summary": itemgetter("summary")}
+    | PromptTemplate.from_template(summarize_chunk_prompt)
     | llm
     | StrOutputParser()
 )
 
-summarize_chain = ({
+read_summary_chain = ({
     "file_path": itemgetter("file_path"),
     "question": itemgetter("question"),
-    "summaries": lambda x: "\n\n".join(x["summaries"])}
-    | PromptTemplate.from_template(summarize_prompt)
+    "summary": itemgetter("summary")}
+    | PromptTemplate.from_template(read_summary_prompt)
     | llm
     | StrOutputParser()
 )
@@ -87,7 +97,7 @@ def text_qa_map_reduce(question: str, text: str,
                        chunk_overlap: int=500) -> LLMResponse:
     """
     Uses an LLM to analyze a body of text according to a question. Text
-    is split into chunks and analyzed using a refinement method.
+    is split into chunks and analyzed using in-place map reduce.
 
     Args:
         question (str): The question to ask.
@@ -108,21 +118,21 @@ def text_qa_map_reduce(question: str, text: str,
                                               chunk_overlap=chunk_overlap)
     docs = splitter.split_text(text)
     
-    inputs = [{
-        "file_path": file_path,
-        "question": question,
-        "chunk": doc
-    } for doc in docs]
-    
     with get_openai_callback() as cb:
-        summaries = []
-        for i in tqdm(inputs, desc="Processing large file in chunks"):
-            summaries.append(document_chain.invoke(i))
+        summary = "[No summary (This is the first chunk) - Replace me]"
+        for doc in tqdm(docs, desc="Processing large file in chunks"):
+            inputs = {
+                "file_path": file_path,
+                "question": question,
+                "chunk": doc,
+                "summary": summary
+            }
+            summary = summarize_chunk_chain.invoke(inputs)
     
-        output = summarize_chain.invoke({
+        output = read_summary_chain.invoke({
             "file_path": file_path,
             "question": question,
-            "summaries": summaries
+            "summary": summary
         })
 
         return LLMResponse(output=output,
