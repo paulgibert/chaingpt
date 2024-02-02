@@ -6,11 +6,10 @@ from dataclasses import dataclass
 from tqdm import tqdm
 import openai
 from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
-from langchain.callbacks import get_openai_callback
+from langchain_community.callbacks import get_openai_callback
 
 # Local
 from chaingpt.utils import config

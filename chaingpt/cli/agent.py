@@ -2,12 +2,10 @@
 from typing import Iterator
 
 # 3rd party
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from langchain.agents.initialize import initialize_agent
 from langchain.agents.agent import AgentExecutor
-from langchain.agents.agent_types import AgentType
-from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
+from langchain.agents import create_openai_functions_agent
 from langchain.memory import ConversationBufferMemory
 from langchain.callbacks.base import BaseCallbackHandler
 
@@ -57,9 +55,9 @@ class ChainGPTAgent:
         {agent_scratchpad}
         """ % self.url)
 
-        self.agent = OpenAIFunctionsAgent(llm=llm, tools=tools, prompt=prompt)
+        self.agent = create_openai_functions_agent(llm=llm, tools=tools, prompt=prompt)
         memory = ConversationBufferMemory(memory_key="chat_history")
-        self.agent_executor = AgentExecutor.from_agent_and_tools(agent=self.agent, tools=tools, memory=memory)
+        self.agent_executor = AgentExecutor(agent=self.agent, tools=tools, memory=memory)
 
 
     def prompt(self, msg: str, callback: BaseCallbackHandler=None) -> Iterator[LLMResponse]:

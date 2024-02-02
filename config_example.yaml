@@ -14,8 +14,8 @@ llm:
   file_qa_model: gpt-4
   max_file_sz: 100000
   map_reduce:
-    chunk_sz: 200 #10000
-    chunk_overlap: 50 #500
+    chunk_sz: 10000
+    chunk_overlap: 500
 
 secrets:
   openai_api_key: YOUR_OPENAI_API_KEY_HERE
