@@ -19,6 +19,7 @@ openai.api_key = config.config["secrets"]["openai_api_key"]
 LLM_MODEL = config.config["llm"]["file_qa_model"]
 
 
+# Used to summarize of file chunk
 summarize_chunk_prompt = """
     You are scanning the contents of a large file from a GitHub repository
     located at the path {file_path}. You are analyzing the file chunk by chunk in order
@@ -39,6 +40,7 @@ summarize_chunk_prompt = """
     </chunk>
     """
 
+# Used to answer the final question for the summary constructed over chunks
 read_summary_prompt = """
     You are scanning the contents of a large file from a GitHub repository located at
     the path {file_path}. You scanned the file chunk by chunk, summarizing each chunk
@@ -139,6 +141,14 @@ def text_qa_map_reduce(question: str, text: str,
                            input_tokens=cb.prompt_tokens,
                            output_tokens=cb.completion_tokens)
 
+
+"""
+TODO:The following prompts and chains are akin to the above but simply stuff the entire
+file into the prompt (no chunking). These prompts and chains need to be wrapped under one object
+and support one OR many chunks so we don't have to manage two implementations.
+
+TODO: Consider returning LangChain objects instead of LLMResponse
+"""
 
 qa_prompt = """
     You are scanning the contents of a file from a GitHub repository located at

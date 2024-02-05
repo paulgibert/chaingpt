@@ -1,3 +1,10 @@
+"""
+TODO: This file was used to mange sessions back when we thought we
+were going to host ChainGPT on Chainguard servers. This is no longer
+the plan and we should remove this file.
+"""
+
+
 # Standard lib
 import uuid
 

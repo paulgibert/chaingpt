@@ -49,4 +49,3 @@ class SystemEnvironment():
                 yield line.decode('utf-8')
         finally:
             container.remove()
-
