@@ -6,7 +6,7 @@ import argparse
 # 3rd party
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.outputs.llm_result import LLMResult 
-from langchain_core.agents import AgentAction
+from langchain_core.agents import AgentAction, AgentFinish
 
 # Local
 from chaingpt.cli.agent import ChainGPTAgent
@@ -15,32 +15,13 @@ from chaingpt.utils.config import config
 
 
 class ChainGPTAgentCallback(BaseCallbackHandler):
-    # def on_llm_start(self,
-    #     serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
-    # ) -> Any:
-    #     print(prompts)
-    
-    # def on_llm_end(self, response: LLMResult, **kwargs: Any) -> Any:
-    #     import pdb
-    #     pdb.set_trace()
-    #     display_response(response)
-    
-    def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> Any:
+    def on_agent_finish(self, finish: AgentFinish, **kwargs: Any) -> Any:
         """Run when chain ends running."""
-        display_response(outputs["output"])
-    
-    # def on_tool_start(self,
-    #     serialized: Dict[str, Any], input_str: str, **kwargs: Any
-    # ) -> Any:
-    #     import pdb
-    #     pdb.set_trace()
-    #     print(input_str)
+        output = finish.return_values["output"]
+        display_response(output)
     
     def on_agent_action(self, action: AgentAction, **kwargs: Any) -> Any:
         display_tool_call(tool_name=action.tool, tool_input=action.tool_input)
-    
-    # def on_tool_end(self, output: str, **kwargs: Any) -> Any:
-    #     print(output)
 
 
 class ChainGPTApp:
